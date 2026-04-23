@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Secure Deduplication System</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #111;
+            color: white;
+            text-align: center;
+        }
+
+        .container {
+            margin-top: 50px;
+        }
+
+        input, button {
+            padding: 10px;
+            margin: 10px;
+        }
+
+        button {
+            background: #00adb5;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #008c91;
+        }
+
+        table {
+            margin: auto;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        td, th {
+            padding: 10px;
+            border: 1px solid #555;
+        }
+
+        #status {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Secure Cloud Storage</h1>
+
+    <!-- Upload -->
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload</button>
+
+    <h3 id="status"></h3>
+
+    <!-- File List -->
+    <table id="fileTable">
+        <tr>
+            <th>Hash</th>
+            <th>Download</th>
+        </tr>
+    </table>
+</div>
+
+<script>
+const API = "http://localhost:8000";
+
+// 🔹 Upload file
+async function uploadFile() {
+    const file = document.getElementById("fileInput").files[0];
+
+    if (!file) {
+        alert("Please select a file");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const res = await fetch(API + "/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json();
+
+        // 🔥 Duplicate handling
+        if (data.message === "Duplicate file detected") {
+            document.getElementById("status").innerText = "⚠ File already exists!";
+            return;
+        }
+
+        // ✅ Success
+        document.getElementById("status").innerText = "✅ " + data.message;
+
+        // 🔥 Reload table to avoid duplicates
+        if (data.hash) {
+            loadFiles();
+        }
+
+        // 🔄 Clear input
+        document.getElementById("fileInput").value = "";
+
+    } catch (error) {
+        console.error(error);
+        document.getElementById("status").innerText = "❌ Upload failed";
+    }
+}
+
+// 🔹 Load files from DB
+async function loadFiles() {
+    try {
+        const res = await fetch(API + "/files");
+        const data = await res.json();
+
+        const table = document.getElementById("fileTable");
+
+        // 🔥 Clear table (keep header)
+        table.innerHTML = `
+            <tr>
+                <th>Hash</th>
+                <th>Download</th>
+            </tr>
+        `;
+
+        data.files.forEach(hash => {
+            addToTable(hash);
+        });
+
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// 🔹 Add row to table
+function addToTable(hash) {
+    const table = document.getElementById("fileTable");
+
+    const row = table.insertRow();
+
+    row.insertCell(0).innerText = hash;
+
+    const downloadBtn = document.createElement("button");
+    downloadBtn.innerText = "Download";
+
+    downloadBtn.onclick = () => {
+        window.open(API + "/download?file_hash=" + hash);
+    };
+
+    row.insertCell(1).appendChild(downloadBtn);
+}
+
+// 🔹 Load files on page load
+window.onload = loadFiles;
+</script>
+
+</body>
+</html>
