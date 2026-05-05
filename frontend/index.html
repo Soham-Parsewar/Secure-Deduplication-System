@@ -1,164 +1,381 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Secure Deduplication System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Dedup Dashboard | MECC + CE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+            --accent: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
         body {
-            font-family: Arial;
-            background: #111;
-            color: white;
-            text-align: center;
+            background: radial-gradient(circle at top left, #1e1b4b, #0f172a);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1.5rem;
         }
 
         .container {
-            margin-top: 50px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        input, button {
-            padding: 10px;
-            margin: 10px;
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
         }
 
-        button {
-            background: #00adb5;
+        h1 {
+            font-size: 2.25rem;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+            letter-spacing: -1px;
+        }
+
+        /* Top Summary Cards */
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            padding: 1rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .summary-card .label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.25rem; }
+        .summary-card .value { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+        .summary-card.proposed .value { color: var(--success); }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .upload-area:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
+
+        .btn {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
             color: white;
             border: none;
+            padding: 0.8rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 1rem;
+            text-transform: uppercase;
+            font-size: 0.75rem;
         }
 
-        button:hover {
-            background: #008c91;
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4); }
+
+        .graph-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
         }
+
+        .graph-card { position: relative; }
+
+        img.chart {
+            width: 100%;
+            border-radius: 1rem;
+            background: #fff;
+            padding: 0.5rem;
+        }
+
+        .logs {
+            margin-top: 1.5rem;
+            background: #020617;
+            padding: 1rem;
+            border-radius: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            height: 150px;
+            overflow-y: auto;
+            color: #10b981;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .log-entry { margin-bottom: 0.3rem; }
+        .log-error { color: var(--error); }
+        .log-success { color: var(--success); }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.05);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
         table {
-            margin: auto;
-            margin-top: 20px;
+            width: 100%;
             border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.8rem;
         }
 
-        td, th {
-            padding: 10px;
-            border: 1px solid #555;
+        th, td {
+            padding: 0.6rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            text-align: left;
         }
 
-        #status {
-            margin-top: 15px;
+        th { color: var(--text-dim); text-transform: uppercase; font-size: 0.7rem; }
+        .highlight { color: var(--success); font-weight: 700; }
+
+        .pow-box {
+            display: none;
+            margin-top: 1.5rem;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid var(--secondary);
+            border-radius: 1rem;
+            padding: 1rem;
         }
     </style>
 </head>
 <body>
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
 
-<div class="container">
-    <h1>Secure Cloud Storage</h1>
+    <div class="container">
+        <header>
+            <h1>Secure Deduplication System</h1>
+            <p style="color: var(--text-dim); font-size: 0.85rem;">MECC + CE | Cloud-Edge Storage Simulation</p>
+        </header>
 
-    <!-- Upload -->
-    <input type="file" id="fileInput">
-    <button onclick="uploadFile()">Upload</button>
+        <!-- TOP TIMINGS BAR -->
+        <div class="summary-bar">
+            <div class="summary-card proposed">
+                <div class="label">Proposed MECC</div>
+                <div class="value" id="topMecc">0.000s</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Existing ECC</div>
+                <div class="value" id="topEcc">0.000s</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Existing RSA</div>
+                <div class="value" id="topRsa">0.000s</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Existing DH</div>
+                <div class="value" id="topDh">0.000s</div>
+            </div>
+        </div>
 
-    <h3 id="status"></h3>
+        <div class="dashboard-grid">
+            <div class="sidebar">
+                <!-- Processor Card -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <h2>📤 File Processor</h2>
+                    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                        <p id="fileLabel">Browse or Drop File</p>
+                        <input type="file" id="fileInput" onchange="handleFileSelect(this)">
+                    </div>
+                    <button class="btn" onclick="uploadFile()">Encrypt & Store</button>
+                    
+                    <div id="compResult" style="display: none; margin-top: 1rem;">
+                        <table id="fullStats">
+                            <thead><tr><th>Algorithm</th><th>Enc Time</th><th>Dec Time</th></tr></thead>
+                            <tbody id="statRows"></tbody>
+                        </table>
+                    </div>
+                </div>
 
-    <!-- File List -->
-    <table id="fileTable">
-        <tr>
-            <th>Hash</th>
-            <th>Download</th>
-        </tr>
-    </table>
-</div>
+                <!-- Storage Card -->
+                <div class="card">
+                    <h2>📥 Storage Actions</h2>
+                    <input type="text" id="hashInput" placeholder="SHA-256 Hash" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 0.8rem; margin-bottom: 0.5rem;">
+                    <button class="btn" onclick="downloadFile()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);">Download</button>
+                    
+                    <div class="pow-box" id="powBox">
+                        <p style="font-size: 0.8rem; margin-bottom: 0.5rem;">Duplicate detected. Solve PoW.</p>
+                        <button class="btn" onclick="handlePoW()">Solve Merkle Challenge</button>
+                    </div>
+                </div>
 
-<script>
-const API = "http://localhost:8000";
+                <div class="logs" id="logBox"></div>
+            </div>
 
-// 🔹 Upload file
-async function uploadFile() {
-    const file = document.getElementById("fileInput").files[0];
+            <div class="main-content">
+                <div class="graph-container">
+                    <div class="card graph-card">
+                        <h2>📊 Performance: Encryption Time</h2>
+                        <img id="timeChart" class="chart" src="/plot/time" alt="Chart">
+                        <button class="btn" style="width: auto; position: absolute; top: 1rem; right: 1rem; margin-top: 0; padding: 0.4rem 0.8rem; font-size: 0.6rem;" onclick="refreshGraphs()">Refresh</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    if (!file) {
-        alert("Please select a file");
-        return;
-    }
+    <script>
+        const API_BASE = "http://localhost:8000";
 
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-        const res = await fetch(API + "/upload", {
-            method: "POST",
-            body: formData
-        });
-
-        const data = await res.json();
-
-        // 🔥 Duplicate handling
-        if (data.message === "Duplicate file detected") {
-            document.getElementById("status").innerText = "⚠ File already exists!";
-            return;
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log-entry log-${type}`;
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            const box = document.getElementById('logBox');
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
         }
 
-        // ✅ Success
-        document.getElementById("status").innerText = "✅ " + data.message;
-
-        // 🔥 Reload table to avoid duplicates
-        if (data.hash) {
-            loadFiles();
+        function handleFileSelect(input) {
+            if (input.files.length > 0) {
+                document.getElementById('fileLabel').innerText = input.files[0].name;
+                log(`File staged: ${input.files[0].name}`);
+            }
         }
 
-        // 🔄 Clear input
-        document.getElementById("fileInput").value = "";
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length === 0) return alert("Select file.");
 
-    } catch (error) {
-        console.error(error);
-        document.getElementById("status").innerText = "❌ Upload failed";
-    }
-}
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
 
-// 🔹 Load files from DB
-async function loadFiles() {
-    try {
-        const res = await fetch(API + "/files");
-        const data = await res.json();
+            document.getElementById('loading').style.display = 'flex';
+            try {
+                const response = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
+                const result = await response.json();
 
-        const table = document.getElementById("fileTable");
+                if (result.error) {
+                    log(result.error, 'error');
+                } else {
+                    log(result.message, 'success');
+                    if (result.message.includes("Duplicate")) {
+                        document.getElementById('powBox').style.display = 'block';
+                        document.getElementById('hashInput').value = result.file_hash;
+                    }
+                    if (result.performance) updateUI(result.performance);
+                    refreshGraphs();
+                }
+            } catch (err) {
+                log(err.message, 'error');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
 
-        // 🔥 Clear table (keep header)
-        table.innerHTML = `
-            <tr>
-                <th>Hash</th>
-                <th>Download</th>
-            </tr>
-        `;
+        function updateUI(p) {
+            document.getElementById('topMecc').innerText = p.mecc_enc_time.toFixed(4) + 's';
+            document.getElementById('topEcc').innerText = p.ecc_enc_time.toFixed(4) + 's';
+            document.getElementById('topRsa').innerText = p.rsa_enc_time.toFixed(4) + 's';
+            document.getElementById('topDh').innerText = p.dh_enc_time.toFixed(4) + 's';
 
-        data.files.forEach(hash => {
-            addToTable(hash);
-        });
+            document.getElementById('compResult').style.display = 'block';
+            document.getElementById('statRows').innerHTML = `
+                <tr class="highlight"><td>MECC</td><td>${p.mecc_enc_time.toFixed(5)}s</td><td>${p.mecc_dec_time.toFixed(5)}s</td></tr>
+                <tr><td>ECC</td><td>${p.ecc_enc_time.toFixed(5)}s</td><td>${p.ecc_dec_time.toFixed(5)}s</td></tr>
+                <tr><td>RSA</td><td>${p.rsa_enc_time.toFixed(5)}s</td><td>${p.rsa_dec_time.toFixed(5)}s</td></tr>
+                <tr><td>DH</td><td>${p.dh_enc_time.toFixed(5)}s</td><td>${p.dh_dec_time.toFixed(5)}s</td></tr>
+            `;
+        }
 
-    } catch (error) {
-        console.error(error);
-    }
-}
+        async function handlePoW() {
+            const hash = document.getElementById('hashInput').value;
+            log(`Running Merkle Challenge...`);
+            try {
+                const challengeRes = await fetch(`${API_BASE}/challenge?file_hash=${hash}`);
+                const challenge = await challengeRes.json();
+                
+                await new Promise(r => setTimeout(r, 1000));
+                
+                const verifyRes = await fetch(`${API_BASE}/verify-pow`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ file_hash: hash, leaf: "demo_leaf", proof: ["s1", "s2"], index: challenge.challenge_index })
+                });
+                const v = await verifyRes.json();
+                if (v.status === "success") {
+                    log(`SUCCESS: ${v.message}`, 'success');
+                    document.getElementById('powBox').style.display = 'none';
+                }
+            } catch (e) { log(e.message, 'error'); }
+        }
 
-// 🔹 Add row to table
-function addToTable(hash) {
-    const table = document.getElementById("fileTable");
+        function downloadFile() {
+            const hash = document.getElementById('hashInput').value;
+            window.open(`${API_BASE}/download?file_hash=${hash}`, '_blank');
+        }
 
-    const row = table.insertRow();
+        function refreshGraphs() {
+            const t = new Date().getTime();
+            document.getElementById('timeChart').src = `${API_BASE}/plot/time?t=${t}`;
+        }
 
-    row.insertCell(0).innerText = hash;
-
-    const downloadBtn = document.createElement("button");
-    downloadBtn.innerText = "Download";
-
-    downloadBtn.onclick = () => {
-        window.open(API + "/download?file_hash=" + hash);
-    };
-
-    row.insertCell(1).appendChild(downloadBtn);
-}
-
-// 🔹 Load files on page load
-window.onload = loadFiles;
-</script>
-
+        window.onload = () => { log("System ready."); refreshGraphs(); };
+    </script>
 </body>
 </html>
