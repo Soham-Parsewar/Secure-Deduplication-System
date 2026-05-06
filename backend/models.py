@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
@@ -11,6 +11,8 @@ class FileMetadata(Base):
     file_hash = Column(String(64), unique=True, index=True)
     file_path = Column(String(500))
     merkle_root = Column(String(64))
+    enc_key = Column(String(255))  # Added missing column
+    c1_data = Column(Text)          # Added missing column (stores public key/data)
 
 class PerformanceLog(Base):
     __tablename__ = "performance"
