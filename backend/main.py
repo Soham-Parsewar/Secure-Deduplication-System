@@ -20,8 +20,12 @@ from backend.utils.merkle import build_merkle_tree, verify_merkle_proof
 from backend.utils.encryption import generate_convergent_key, encrypt_ce
 from backend.utils.mecc import generate_mecc_keys, encrypt_mecc
 from backend.utils.performance import measure_encryption_performance, store_performance_results
-from backend.database import SessionLocal
+from backend.database import SessionLocal, engine
+from backend.models import Base
 from sqlalchemy import text
+
+# Create tables on startup
+Base.metadata.create_all(bind=engine)
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
