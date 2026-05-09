@@ -311,8 +311,7 @@
                 <!-- Storage Card -->
                 <div class="card">
                     <h2>📥 Storage Actions</h2>
-                    <input type="text" id="hashInput" placeholder="SHA-256 Hash"
-                        style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 0.8rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="downloadHash" placeholder="SHA-256 Hash" style="width: 100%; padding: 0.5rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: white; margin-bottom: 1rem;">
                     <button class="btn" onclick="downloadFile()"
                         style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);">Download</button>
 
@@ -380,6 +379,10 @@
                     }
                     if (result.performance) updateUI(result.performance);
                     refreshGraphs();
+                    if (result.file_hash) {
+                        document.getElementById('downloadHash').value = result.file_hash;
+                        log(`Hash ready for download!`, 'info');
+                    }
                 }
             } catch (err) {
                 log(err.message, 'error');
@@ -426,7 +429,7 @@
         }
 
         function downloadFile() {
-            const hash = document.getElementById('hashInput').value;
+            const hash = document.getElementById('downloadHash').value;
             window.open(`${API_BASE}/download?file_hash=${hash}`, '_blank');
         }
 
